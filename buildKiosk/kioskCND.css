@@ -1,0 +1,74 @@
+/* Estilizar a mensagem de erro */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+
+/* Garantir que a área de chat seja predominante */
+.mx_RoomView_messagePanel {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.mx_ToastContainer{
+    visibility: hidden !important;
+ }
+
+
+/* Esconder completamente o painel esquerdo */
+.mx_LeftPanel_outerWrapper {
+    display: none !important;
+    width: 0px!important;
+}
+
+/* Opcional: Garantir que o painel de mensagens ocupe todo o espaço */
+.mx_RoomView {
+    grid-template-columns: 0 1fr !important;
+}
+
+/* Remover bordas e espaçamentos extras */
+.mx_RoomView_body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+
+.mx_AuthPage_modal {
+    background-color: white !important;
+    background-image: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png") !important;
+    background-repeat: no-repeat !important;
+    background-position: center center !important;
+    background-size: contain !important;
+
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Esconder visualmente todos os filhos, mas mantendo no DOM */
+.mx_AuthPage_modal > * {
+/*    opacity: 0 !important;       /* invisível */
+/*    pointer-events: none !important; /* não interfere nos cliques JS */
+}
+
+/* Logo da tela de login
+.mx_AuthPage_branding_logo img {
+    content: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png");
+    width: 150px; /* ajuste conforme necessário
+    height: auto;
+}
+
+
+.mx_LeftPanel_headerLogo img {
+    content: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png");
+    width: 150px;
+    height: auto;
+}
+
+ Qualquer outra instância
+img[src*="vector-im-logo"] {
+    content: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png");
+}
+
