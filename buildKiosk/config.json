@@ -18,7 +18,7 @@
   "default_is_url": "",
   "sso_button": true,
   "sso_url": "https://matrix.casanovadigital.com.br/_matrix/client/r0/login/sso/redirect",
-  "welcome_title": "Bem-vindo ao Casanva ChatKiosk",
+  "welcome_title": "Bem-vindo ao Casanova ChatKiosk",
   "welcome_body": "Use apenas o botão SSO para acessar.",
   "brand_url": "",
   "custom_login": "sso",

@@ -6,8 +6,10 @@ CONTAINER_NAME="casanovakiosklab"
 PORT_MAPPING="8099:80"
 BUILD_CONTEXT="./buildKiosk"
 
+
+
+
 echo "--- Iniciando a atualização do Kiosk ---"
-cd ./buildKiosk
 # Passo 1: Parar o contêiner existente, se estiver rodando
 echo "Parando o contêiner '$CONTAINER_NAME'..."
 docker stop $CONTAINER_NAME 2>/dev/null || true
