@@ -1,15 +1,22 @@
 window.kioskCND = (function() {
-    // Constantes para seletores e estados
+
+    /**
+     * Seletores utilizados para buscar elementos no DOM.
+     */
     const SELECTORS = {
         SSO_BUTTON: '.mx_SSOButton', // Genérico, com verificação de texto
         GUEST_SIGNIN_BUTTON: '.mx_WelcomePage_guest .mx_ButtonSignIn',
         ROOM_VIEW: '.mx_RoomView',
         MATRIX_CHAT: '.mx_MatrixChat',
         MOBILE_GUIDE_BUTTON: '#back_to_element_button',
+        VERIFY_MODAL_SKIP_BUTTON: '.mx_CompleteSecurity_skip',
+        VERIFY_LATER_BUTTON_TEXT: ".mx_AccessibleButton_kind_danger_outline",
         USER_MENU: '.mx_UserMenu',
         ROOM_LIST: '.mx_RoomList'
     };
-
+    /**
+     * Estados internos do script.
+     */
     const STATES = {
         HAS_CLICKED_SSO: false,
         HAS_CLICKED_GUEST: false,
@@ -19,11 +26,17 @@ window.kioskCND = (function() {
 
     let ssoPollTimeout;
     let ssoPollAttempts = 0;
+    /** Máximo de tentativas de polling. */
     const MAX_POLL_ATTEMPTS = 30;
-    const INITIAL_POLL_INTERVAL = 250; // ms
-    const MAX_POLL_INTERVAL = 1000; // ms
+    /** Intervalo inicial do polling em ms. */
+    const INITIAL_POLL_INTERVAL = 250;
+    /** Intervalo máximo do polling em ms. */
+    const MAX_POLL_INTERVAL = 1000;
 
-    // Função para verificar se o usuário já está logado
+    /**
+     * Verifica se o usuário já está logado.
+     * @returns {boolean} true se o usuário estiver logado, false caso contrário.
+     */
     function isUserLoggedIn() {
         const chatContainer = document.querySelector(SELECTORS.MATRIX_CHAT) || document.querySelector(SELECTORS.ROOM_LIST) || document.querySelector(SELECTORS.USER_MENU);
         if (chatContainer) {
@@ -35,40 +48,75 @@ window.kioskCND = (function() {
             console.log('kioskCND: Usuário detectado como logado via token no localStorage.');
             return true;
         }
-        console.log('kioskCND: Usuário não está logado.');
+        console.log('kioskCND: Usuário não está logadooaihwuifhauwhfaw.');
         return false;
     }
 
-    // Função para desativar todos os monitores
+    /**
+     * Desativa todos os monitores/observers ativos.
+     */
     function disableAllMonitors() {
         console.log('kioskCND: Desativando todos os monitores.');
         if (ssoPollTimeout) clearTimeout(ssoPollTimeout);
     }
 
-    // Função para lidar com a página Mobile Guide
-    function handleMobileGuide() {
-        if (STATES.HAS_HANDLED_MOBILE_GUIDE) {
-            console.log('kioskCND: Mobile Guide já processado, ignorando.');
-            return false;
+    /**
+     * Observa a página Mobile Guide e clica no botão de voltar para o modo Desktop.
+     */
+    function setupMobileGuideObserver() {
+        if (!window.location.pathname.includes("/mobile_guide")) {
+            return;
         }
 
-        if (document.title !== 'Element Mobile Guide' && !document.querySelector(SELECTORS.MOBILE_GUIDE_BUTTON)) {
-            console.log('kioskCND: Não é a página Mobile Guide.');
-            return false;
-        }
+        console.log("kioskCND: Detectada página Mobile Guide. Iniciando observador de botão...");
 
-        const desktopBtn = document.querySelector(SELECTORS.MOBILE_GUIDE_BUTTON);
-        if (desktopBtn) {
-            console.log('kioskCND: Detectada página Mobile Guide. Clicando em "Go to Desktop Site"...');
-            desktopBtn.click();
-            STATES.HAS_HANDLED_MOBILE_GUIDE = true;
-            return true;
-        }
-        console.log('kioskCND: Botão "Go to Desktop Site" não encontrado na Mobile Guide.');
-        return false;
+        const observer = new MutationObserver((mutationsList, observer) => {
+            const desktopBtn = document.querySelector(SELECTORS.MOBILE_GUIDE_BUTTON);
+            if (desktopBtn) {
+                console.log('kioskCND: Botão "Go to Desktop Site" detectado pelo observador. Clicando...');
+                desktopBtn.click();
+                // O trabalho está feito, desconecta o observador para economizar recursos.
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    // Função para clicar no botão SSO
+    /**
+     * Observa modais de verificação de segurança e fecha automaticamente.
+     */
+    function setupVerificationModalObserver() {
+        console.log("kioskCND: Observador de modal de verificação INICIADO.");
+
+        const observer = new MutationObserver((mutationsList, observer) => {
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                    const skipBtn = document.querySelector(SELECTORS.VERIFY_MODAL_SKIP_BUTTON);
+                    if (skipBtn) {
+                        console.log('kioskCND: Modal de segurança (tipo 1) detectado. Fechando...');
+                        skipBtn.click();
+                        // return; // Ação realizada
+                    }
+                    const verifyLaterBtn = document.querySelector(SELECTORS.VERIFY_LATER_BUTTON_TEXT);
+
+                    if (verifyLaterBtn) {
+                        console.log('kioskCND: Modal de segurança (tipo 2) detectado. Clicando em "Verify Later"...');
+                        verifyLaterBtn.click();
+                        return; // Ação realizada
+                    }
+                }
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+
+    /**
+     * Clica automaticamente no botão de login via SSO.
+     * @returns {boolean} true se clicou, false caso contrário.
+     */
     function tryClickSSO() {
         if (STATES.HAS_CLICKED_SSO) {
             console.log('kioskCND: SSO já clicado, ignorando.');
@@ -108,7 +156,10 @@ window.kioskCND = (function() {
         return false;
     }
 
-    // Função para clicar no botão SignIn da tela de convidado
+    /**
+     * Clica automaticamente no botão "Sign In" do modo convidado.
+     * @returns {boolean} true se clicou, false caso contrário.
+     */
     function tryClickGuestSignIn() {
         if (STATES.HAS_CLICKED_GUEST) {
             console.log('kioskCND: Guest SignIn já clicado, ignorando.');
@@ -166,9 +217,9 @@ window.kioskCND = (function() {
         }
 
         let hasChanges = false;
-        if (!STATES.HAS_HANDLED_MOBILE_GUIDE) {
-            hasChanges = handleMobileGuide() || hasChanges;
-        }
+        // if (!STATES.HAS_HANDLED_MOBILE_GUIDE) {
+        //     hasChanges = handleMobileGuide() || hasChanges;
+        // }
         if (!STATES.HAS_CLICKED_SSO) {
             hasChanges = tryClickSSO() || hasChanges;
         }
@@ -179,6 +230,12 @@ window.kioskCND = (function() {
             hasChanges = tryEnterRoom() || hasChanges;
         }
 
+        if (ssoPollAttempts < MAX_POLL_ATTEMPTS) {
+            ssoPollTimeout = setTimeout(pollActions, interval);
+        } else {
+            console.warn('kioskCND: Limite de tentativas de polling atingido.');
+            disableAllMonitors();
+        }
         if (STATES.HAS_CLICKED_SSO && STATES.HAS_CLICKED_GUEST && STATES.HAS_ENTERED_ROOM && STATES.HAS_HANDLED_MOBILE_GUIDE) {
             console.log('kioskCND: Todas as ações completadas. Parando polling.');
             disableAllMonitors();
@@ -194,13 +251,20 @@ window.kioskCND = (function() {
         }
     }
 
-    // Função para inicializar
+    /**
+     * Inicializa o script e define listeners principais.
+     */
     function kioskInicializar() {
+
         const params = new URLSearchParams(window.location.search);
         const salaParam = params.get('salaConversa');
         if (salaParam) {
             localStorage.setItem('kioskSalaConversa', salaParam);
         }
+
+        setupVerificationModalObserver();
+        setupMobileGuideObserver();
+        // setupMobileGuideObserver();
 
         if (isUserLoggedIn()) {
             console.log('kioskCND: Usuário já logado na inicialização. Navegando diretamente para a sala.');
@@ -208,11 +272,11 @@ window.kioskCND = (function() {
             tryEnterRoom();
             return;
         }
-
-        handleMobileGuide();
+        // handleMobileGuide();
         tryClickSSO();
         tryClickGuestSignIn();
         tryEnterRoom();
+
 
         if (!(STATES.HAS_CLICKED_SSO && STATES.HAS_CLICKED_GUEST && STATES.HAS_ENTERED_ROOM && STATES.HAS_HANDLED_MOBILE_GUIDE)) {
             console.log('kioskCND: Iniciando polling com intervalo inicial de', INITIAL_POLL_INTERVAL + 'ms');
@@ -220,14 +284,15 @@ window.kioskCND = (function() {
         }
     }
 
-    // Resetar estados
+    /**
+     * Reseta os estados e reinicializa o script.
+     */
     function reset() {
         Object.keys(STATES).forEach(key => STATES[key] = false);
         disableAllMonitors();
         kioskInicializar();
     }
 
-    // Chamar inicialização
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', kioskInicializar);
     } else {
@@ -239,7 +304,7 @@ window.kioskCND = (function() {
         tryClickSSO,
         tryClickGuestSignIn,
         tryEnterRoom,
-        handleMobileGuide,
+        // handleMobileGuide,
         isUserLoggedIn,
         disableAllMonitors,
         reset
