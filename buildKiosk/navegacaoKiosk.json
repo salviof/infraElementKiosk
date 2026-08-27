@@ -1,0 +1,260 @@
+{
+  "versao": 1,
+  "descricao": "Regras de navegacao automatizada do Element em modo kiosk. Editar este arquivo NAO exige mexer em kioskCND.js. A documentacao de cada campo esta no README.md.",
+
+  "parametrosUrl": {
+    "sala": "salaConversa",
+    "modo": "modo",
+    "sso": "sso"
+  },
+
+  "padroes": {
+    "modo": "normal",
+    "sso": "Casanova",
+    "sala": ""
+  },
+
+  "modosValidos": ["kiosk", "normal"],
+
+  "sessao": {
+    "armazenamento": "localStorage",
+    "chave": "kioskCND:intencao",
+    "validadeMs": 300000,
+    "somenteDuranteLogin": true,
+    "chaveConfigTemporaria": "kioskCND:configTemporaria",
+    "validadeConfigTemporariaMs": 86400000
+  },
+
+  "log": {
+    "ativo": true,
+    "prefixo": "kioskCND",
+    "nivel": "info"
+  },
+
+  "polling": {
+    "intervaloInicialMs": 250,
+    "intervaloMaximoMs": 3000,
+    "fatorBackoff": 1.4,
+    "duracaoMaximaMs": 0,
+    "observarMutacoes": true,
+    "debounceMutacaoMs": 120
+  },
+
+  "interface": {
+    "classeBase": "kioskCND",
+    "classePorModo": {
+      "kiosk": "kioskCND--kiosk",
+      "normal": "kioskCND--normal"
+    },
+    "aplicarCss": true,
+    "botaoAlternarModo": {
+      "ativo": true,
+      "classe": "kioskCND_botaoModo",
+      "porModo": {
+        "kiosk": {
+          "texto": "Entrar sem o modo kiosk",
+          "titulo": "Abrir o Element completo, sem automacao de navegacao",
+          "modoDestino": "normal"
+        },
+        "normal": {
+          "texto": "Voltar ao modo kiosk",
+          "titulo": "Reativar a navegacao automatizada do atendimento",
+          "modoDestino": "kiosk"
+        }
+      }
+    }
+  },
+
+  "estados": {
+    "logado": {
+      "descricao": "Sessao ativa: alguma tela interna do Element visivel (ou credencial guardada) e nenhuma tela de autenticacao na frente.",
+      "qualquerSeletor": [
+        ".mx_UserMenu",
+        ".mx_RoomView",
+        ".mx_SpacePanel",
+        ".mx_HomePage",
+        ".mx_MatrixChat_wrapper"
+      ],
+      "qualquerChaveArmazenamento": ["mx_access_token", "mx_user_id"],
+      "nenhumSeletor": [".mx_AuthPage", ".mx_Welcome"]
+    },
+    "telaLogin": {
+      "descricao": "Tela de autenticacao aberta (inclui a lista de provedores SSO).",
+      "qualquerSeletor": [".mx_AuthPage", ".mx_SSOButton"]
+    },
+    "telaBoasVindas": {
+      "descricao": "Tela inicial de boas-vindas do Element, anterior ao login.",
+      "qualquerSeletor": [".mx_Welcome", ".mx_WelcomePage"]
+    },
+    "naSala": {
+      "descricao": "A sala pedida na URL ja esta aberta.",
+      "todosSeletores": [".mx_RoomView"],
+      "hashContem": "/room/"
+    },
+    "verificacaoPendente": {
+      "descricao": "Element pedindo verificacao de dispositivo/criptografia.",
+      "qualquerSeletor": [".mx_CompleteSecurity_skip", ".mx_CompleteSecurity_actionRow"]
+    }
+  },
+
+  "regras": [
+    {
+      "id": "mobileGuideParaDesktop",
+      "descricao": "Em /mobile_guide o Element oferece baixar o app. No kiosk isso e um beco sem saida: clica em 'site desktop'.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "urlContem": "/mobile_guide",
+        "seletorExiste": "#back_to_element_button"
+      },
+      "acoes": [{ "tipo": "clicar", "seletor": "#back_to_element_button" }],
+      "umaVez": true,
+      "tentativasMaximas": 10,
+      "esperaEntreTentativasMs": 300
+    },
+    {
+      "id": "irParaTelaLogin",
+      "descricao": "Deslogado na tela de boas-vindas: vai direto para a tela de login, onde ficam os botoes de SSO.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "estados": { "logado": false, "telaBoasVindas": true },
+        "urlNaoContem": "loginToken",
+        "hashNaoContem": "/login"
+      },
+      "acoes": [{ "tipo": "navegarHash", "valor": "#/login" }],
+      "umaVez": true,
+      "tentativasMaximas": 5,
+      "esperaEntreTentativasMs": 500
+    },
+    {
+      "id": "loginSsoAutomatico",
+      "descricao": "Clica no provedor de SSO cujo nome contem o valor de ?sso= (ou padroes.sso). Sem 'atributo' o filtro usa o nome acessivel: com 2+ provedores o Element usa botoes de icone e poe 'Continuar com <provedor>' em um span apontado por aria-labelledby, deixando o aria-label vazio. 'quandoNaoEncontrar: unico' = so clica no fallback se houver exatamente um provedor, para nunca logar no provedor errado. A marca 'loginIniciado' permite retomar o modo kiosk se o provedor devolver o usuario sem a query string.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "estados": { "logado": false },
+        "urlNaoContem": "loginToken",
+        "seletorExiste": ".mx_SSOButton"
+      },
+      "acoes": [
+        {
+          "tipo": "clicar",
+          "seletor": ".mx_SSOButton",
+          "filtro": {
+            "contem": "{{sso}}",
+            "quandoNaoEncontrar": "unico"
+          }
+        },
+        { "tipo": "marcarSessao", "dados": { "loginIniciado": true } }
+      ],
+      "umaVez": true,
+      "atrasoInicialMs": 250,
+      "tentativasMaximas": 20,
+      "esperaEntreTentativasMs": 500
+    },
+    {
+      "id": "pularVerificacaoDispositivo",
+      "descricao": "Fecha o pedido de verificacao de dispositivo que aparece depois do login.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "seletorExiste": ".mx_CompleteSecurity_skip"
+      },
+      "acoes": [{ "tipo": "clicar", "seletor": ".mx_CompleteSecurity_skip" }],
+      "umaVez": false,
+      "tentativasMaximas": 6,
+      "esperaEntreTentativasMs": 1000
+    },
+    {
+      "id": "confirmarPularVerificacao",
+      "descricao": "Confirma o aviso 'verificar mais tarde'. Seletor restrito a mx_CompleteSecurity_actionRow: o botao vermelho generico tambem e usado por 'Sair da sala' e afins.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "seletorExiste": ".mx_CompleteSecurity_actionRow .mx_AccessibleButton_kind_danger_outline"
+      },
+      "acoes": [
+        {
+          "tipo": "clicar",
+          "seletor": ".mx_CompleteSecurity_actionRow .mx_AccessibleButton_kind_danger_outline"
+        }
+      ],
+      "umaVez": false,
+      "tentativasMaximas": 6,
+      "esperaEntreTentativasMs": 1000
+    },
+    {
+      "id": "entrarNaSala",
+      "descricao": "Abre a sala de ?salaConversa=. O valor entra cru no hash (#/room/#alias:servidor); o Element NAO decodifica esse trecho, por isso nao se deve codificar. Repete enquanto o Element jogar o usuario de volta para a home.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "requerParametros": ["sala"],
+        "estados": { "logado": true, "naSala": false },
+        "urlNaoContem": "/mobile_guide"
+      },
+      "acoes": [
+        {
+          "tipo": "navegarHash",
+          "valor": "#/room/{{sala}}",
+          "reemitirSeIgual": true
+        }
+      ],
+      "umaVez": false,
+      "atrasoInicialMs": 400,
+      "tentativasMaximas": 20,
+      "esperaEntreTentativasMs": 1500
+    },
+    {
+      "id": "aceitarConviteDaSala",
+      "descricao": "Se a sala exigir aceitar convite/entrar, clica no botao principal da barra de previa.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "requerParametros": ["sala"],
+        "estados": { "logado": true },
+        "seletorExiste": ".mx_RoomPreviewBar_actions .mx_AccessibleButton_kind_primary"
+      },
+      "acoes": [
+        {
+          "tipo": "clicar",
+          "seletor": ".mx_RoomPreviewBar_actions .mx_AccessibleButton_kind_primary"
+        }
+      ],
+      "umaVez": false,
+      "atrasoInicialMs": 300,
+      "tentativasMaximas": 3,
+      "esperaEntreTentativasMs": 2000
+    },
+    {
+      "id": "encerrarFluxoDeLogin",
+      "descricao": "Login concluido: apaga a marca 'loginIniciado'. E ela que autoriza herdar o modo kiosk da sessao quando o provedor de SSO devolve o usuario sem a query string - fora do login, URL sem ?modo= volta a ser o Element normal.",
+      "ativo": true,
+      "quando": {
+        "modos": ["kiosk"],
+        "estados": { "logado": true },
+        "urlNaoContem": "loginToken"
+      },
+      "acoes": [{ "tipo": "marcarSessao", "dados": { "loginIniciado": false } }],
+      "umaVez": true,
+      "atrasoInicialMs": 1000,
+      "tentativasMaximas": 3,
+      "esperaEntreTentativasMs": 1000
+    },
+    {
+      "id": "fecharDialogosGenericos",
+      "descricao": "Exemplo desativado: fecha qualquer dialogo do Element (ex.: 'novidades da versao'). Ligar so se aparecer algum modal atrapalhando o atendimento - o seletor e amplo e pode cancelar dialogos uteis.",
+      "ativo": false,
+      "quando": {
+        "modos": ["kiosk"],
+        "estados": { "logado": true },
+        "seletorExiste": ".mx_Dialog .mx_Dialog_cancelButton"
+      },
+      "acoes": [{ "tipo": "clicar", "seletor": ".mx_Dialog .mx_Dialog_cancelButton" }],
+      "umaVez": false,
+      "tentativasMaximas": 5,
+      "esperaEntreTentativasMs": 1500
+    }
+  ]
+}

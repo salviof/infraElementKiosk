@@ -1,74 +1,80 @@
-/* Estilizar a mensagem de erro */
-body {
+/*
+ * kioskCND.css - estilo do atendimento em modo kiosk.
+ *
+ * Todas as regras de kiosk sao escopadas em html.kioskCND--kiosk, classe que
+ * o kioskCND.js aplica no <html> antes da primeira pintura. Assim o
+ * ?modo=normal entrega o Element completo, sem precisar de outro build.
+ */
+
+/* ------------------------------------------------------------------ *
+ * Modo kiosk: interface reduzida ao painel da conversa
+ * ------------------------------------------------------------------ */
+
+html.kioskCND--kiosk body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
     background-color: #f0f0f0;
 }
 
-/* Garantir que a área de chat seja predominante */
-.mx_RoomView_messagePanel {
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-.mx_ToastContainer{
+/* Avisos e pedidos de verificacao nao interessam ao cliente no balcao. */
+html.kioskCND--kiosk .mx_ToastContainer {
     visibility: hidden !important;
- }
-
-
-/* Esconder completamente o painel esquerdo */
-.mx_LeftPanel_outerWrapper {
-    display: none !important;
-    width: 0px!important;
 }
 
-/* Opcional: Garantir que o painel de mensagens ocupe todo o espaço */
-.mx_RoomView {
+/* Esconder completamente o painel esquerdo (lista de salas e espacos). */
+html.kioskCND--kiosk .mx_LeftPanel_outerWrapper,
+html.kioskCND--kiosk .mx_SpacePanel {
+    display: none !important;
+    width: 0 !important;
+}
+
+/* O painel de mensagens ocupa todo o espaco liberado. */
+html.kioskCND--kiosk .mx_RoomView {
     grid-template-columns: 0 1fr !important;
 }
 
-/* Remover bordas e espaçamentos extras */
-.mx_RoomView_body {
+html.kioskCND--kiosk .mx_RoomView_body,
+html.kioskCND--kiosk .mx_RoomView_messagePanel {
     margin: 0 !important;
     padding: 0 !important;
 }
 
+/* ------------------------------------------------------------------ *
+ * Botao de troca de modo (criado pelo kioskCND.js)
+ * ------------------------------------------------------------------ */
 
-/*.mx_AuthPage_modal {*/
-/*    background-color: white !important;*/
-/*    background-image: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png") !important;*/
-/*    background-repeat: no-repeat !important;*/
-/*    background-position: center center !important;*/
-/*    background-size: contain !important;*/
-
-/*    width: 100%;*/
-/*    height: 100%;*/
-/*    display: block;*/
-/*}*/
-
-/* Esconder visualmente todos os filhos, mas mantendo no DOM */
-.mx_AuthPage_modal > * {
-/*    opacity: 0 !important;       /* invisível */
-/*    pointer-events: none !important; /* não interfere nos cliques JS */
+.kioskCND_botaoModo {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: 2000; /* acima dos dialogos do Element */
+    padding: 6px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #17191c;
+    font: 12px/1.4 Arial, sans-serif;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s ease-in-out;
 }
 
-/* Logo da tela de login
-.mx_AuthPage_branding_logo img {
-    content: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png");
-    width: 150px; /* ajuste conforme necessário
-    height: auto;
+.kioskCND_botaoModo:hover,
+.kioskCND_botaoModo:focus-visible {
+    opacity: 1;
 }
 
-
-.mx_LeftPanel_headerLogo img {
-    content: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png");
-    width: 150px;
-    height: auto;
-}
-
- Qualquer outra instância
-img[src*="vector-im-logo"] {
-    content: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png");
-}
-
+/* ------------------------------------------------------------------ *
+ * Identidade visual (opcional)
+ * ------------------------------------------------------------------ *
+ *
+ * Para trocar as logos, descomente e ajuste as URLs:
+ *
+ * html.kioskCND--kiosk .mx_AuthPage_branding_logo img,
+ * html.kioskCND--kiosk .mx_LeftPanel_headerLogo img {
+ *     content: url("https://imagens.casanovadigital.com.br/uploads/2020/05/01_.png");
+ *     width: 150px;
+ *     height: auto;
+ * }
+ */
